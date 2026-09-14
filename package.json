@@ -1,0 +1,18 @@
+{
+  "name": "sentry-loop-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:vendor": "node scripts/build-ui-vendor.mjs",
+    "test:graph": "node --test tests/arena-graph-data.test.mjs"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
+    "3d-force-graph": "1.80.0",
+    "three": "0.186.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

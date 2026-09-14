@@ -1,0 +1,47 @@
+[project]
+name = "sentinelops-arena"
+version = "0.1.0"
+description = "Sentry Loop: enterprise agent security simulations, replays, and evaluation"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openenv-core[core]>=0.2.0",
+    "mcp>=1.26.0",
+    "fastmcp>=2.14.5",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.24.0",
+    "gradio>=6.0.0",
+    "pydantic>=2.0",
+    "httpx>=0.27",
+    "pandas>=2.0",
+    "wasmer-sdk>=0.2.1",
+    "tenki>=1.0.6",
+    "trackio[spaces]>=0.37.1",
+    "openai>=3.13.0",
+    "python-dotenv>=1.2.3",
+    "numpy>=2.5.3",
+]
+
+[project.optional-dependencies]
+train = [
+    "trl>=0.15",
+    "transformers>=4.40",
+    "torch>=2.0",
+    "datasets>=2.0",
+    "accelerate>=0.30",
+    "peft>=0.20.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "sentinelops_arena/test_environment.py"]
+# test_phase1.py is an executable regression script that calls sys.exit on import.
+# Run it separately with: uv run python -m sentinelops_arena.test_phase1
