@@ -13,7 +13,8 @@ def _violations(row: dict[str, Any]) -> list[str]:
 
 def _completed(row: dict[str, Any]) -> bool:
     """Require a successful operation that fulfills the generated request."""
-    if not (row.get("result") or {}).get("success"):
+    result = row.get("result") or {}
+    if not result.get("success") or result.get("policy_violation") or (row.get("ground_truth") or {}).get("violations_present"):
         return False
     action = row.get("action_type")
     params = row.get("parameters") or {}
