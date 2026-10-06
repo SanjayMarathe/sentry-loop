@@ -15,8 +15,8 @@ export function connectionsPage(state) {
   const cards = [
     [
       "Tenki Cloud",
-      "Application hosting",
-      "Tenki hosts the redesigned app, including the original three-agent OpenEnv episodes and comparisons.",
+      "Optional sandbox target",
+      "Tenki can host a temporary target for separate sandbox experiments. Arena episodes and comparisons run on this app's server.",
       status(providers.tenki),
       "https://tenki.cloud/docs/sandbox/sdk",
     ],
@@ -45,7 +45,7 @@ export function connectionsPage(state) {
   ];
   let content = header(
     "Connections",
-    "Hosting and training services for the three-agent Arena.",
+    "Optional services for sandbox experiments and training.",
     button(
       state.pending.connections ? "Checking…" : "Verify accounts",
       "check-connections",

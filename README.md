@@ -4,13 +4,15 @@ emoji: 🔁
 colorFrom: blue
 colorTo: gray
 sdk: docker
-app_port: 7860
+app_port: 10000
 pinned: false
 ---
 
 # Sentry Loop
 
-Sentry Loop is a multi-agent security arena that attacks, evaluates, and trains enterprise AI agents to resist manipulation while completing business tasks. It visualizes every decision through an interactive graph, agent terminals, and a live incident board; Tenki hosts the application and temporary cloud targets, while Wasmer isolates agent-generated programs during execution.
+Sentry Loop is a multi-agent security arena for testing enterprise AI agents under simulated attacks. It visualizes decisions through an interactive graph, agent terminals, and an incident board. The demo build runs the Arena directly on Render. Tenki and Wasmer remain optional integrations for separate experiments.
+
+For the one-week demo, see the [recording and deployment runbook](docs/DEMO_VIDEO_RENDER.md). The [Render setup link](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FSanjayMarathe%2Fsentry-loop%2Ftree%2Fdemo-render) uses this branch's free Docker service configuration.
 
 Three agents operate across a simulated CRM, billing system, and ticketing system:
 
@@ -23,8 +25,7 @@ Each deterministic episode runs for 30 ticks and 90 actions. The same replay cur
 ## Run locally
 
 ```bash
-uv sync --frozen --python 3.12
-uv run app.py
+scripts/start_demo.sh
 ```
 
 Open `http://127.0.0.1:7860`. Episodes, comparisons, environment records, and the included recorded GRPO charts require no cloud credentials or GPU.
@@ -36,7 +37,6 @@ Open `http://127.0.0.1:7860`. Episodes, comparisons, environment records, and th
 | **Arena** | Interactive 3D event graph, synchronized Customers/Tickets/Finances Kanban, and all three read-only xterm transcripts. |
 | **Compare** | Baseline and resilient demonstration policies against the same seed. |
 | **Environment** | Every enterprise record moving through Watching, Exposed, Contained, and Clear. |
-| **Wasmer Lab** | Untrusted worker programs executed with restricted host-file and network access. |
 | **Training** | Reward, reward components, KL divergence, loss, and completion length. |
 
 The included baseline and resilient policies are heuristic demonstrations. `training/grpo_metrics.csv` is a clearly labeled 216-step historical Worker recording; viewing it does not train or load model weights.

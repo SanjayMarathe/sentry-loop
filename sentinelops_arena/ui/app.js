@@ -79,7 +79,6 @@ const state = {
 const navigation = [
   ["Arena", "arena", "/arena/replay", "arena"],
   ["Environment", "database", "/environment/customers", "environment", true],
-  ["Wasmer Lab", "shield", "/sandbox/replay", "sandbox", true],
   ["Compare", "compare", "/compare/replays", "compare"],
   ["Training", "training", "/training/reward", "training"],
   ["Connections", "settings", "/connections", "connections"],

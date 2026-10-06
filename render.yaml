@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: sentry-loop-demo
+    runtime: docker
+    repo: https://github.com/SanjayMarathe/sentry-loop
+    branch: demo-render
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: SENTRY_PUBLIC
+        value: "1"
+      - key: SENTRY_HOST
+        value: "0.0.0.0"
+      - key: PORT
+        value: "10000"
+      - key: SENTRY_DATA_DIR
+        value: "/tmp/sentry-loop-data"
