@@ -94,7 +94,7 @@ def compute_scorecard(log: list[dict[str, Any]]) -> dict[str, Any]:
             "target": target,
             "outcome": outcome,
             "worker_action": evidence.get("action_type", "") if evidence else "",
-            "violated_rules": _violations(evidence) if evidence else [],
+            "violated_rules": [rule for rule in _violations(success) if rule == required] if success else [],
         })
 
         # An auditor decision evaluates the worker action immediately before it.
