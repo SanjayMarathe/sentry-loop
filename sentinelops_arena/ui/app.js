@@ -13,7 +13,7 @@ import {
   pad,
 } from "./ui.js";
 import { arenaPage } from "./arena.js";
-import { comparePage } from "./compare.js";
+import { comparePage, resultsPage, replayEntryIndex } from "./compare.js";
 import { environmentPage } from "./environment.js";
 import { trainingPage } from "./training.js";
 import { guidePage } from "./guide.js";
@@ -77,14 +77,11 @@ const state = {
   ),
 };
 const navigation = [
+  ["Results", "compare", "/results", "results"],
   ["Arena", "arena", "/arena/replay", "arena"],
-  ["Environment", "database", "/environment/customers", "environment", true],
-  ["Compare", "compare", "/compare/replays", "compare"],
-  ["Training", "training", "/training/reward", "training"],
-  ["Connections", "settings", "/connections", "connections"],
-  ["Guide", "book", "/guide", "guide"],
 ];
 const defaults = {
+  results: "scorecard",
   arena: "replay",
   compare: "replays",
   environment: "customers",
@@ -92,6 +89,7 @@ const defaults = {
   training: "reward",
 };
 const allowed = {
+  results: ["scorecard"],
   arena: ["replay", "analytics", "rewards"],
   compare: ["replays", "analytics"],
   environment: ["customers", "invoices", "tickets"],
@@ -103,7 +101,7 @@ const allowed = {
 
 function route() {
   const bits = location.pathname.replace(/^\/+|\/+$/g, "").split("/");
-  const section = bits[0] || "arena",
+  const section = bits[0] || "results",
     view = bits[1] || defaults[section] || "";
   const valid =
     Object.hasOwn(allowed, section) &&
@@ -121,7 +119,7 @@ function shell(content, current) {
   ) {
     return `<div class="app-shell immersive-shell"><main class="main-workspace arena-immersive" id="main-content" tabindex="-1" aria-labelledby="page-title"><h1 class="sr-only" id="page-title">Sentry Loop</h1>${content}</main></div>`;
   }
-  return `<div class="app-shell"><button class="menu-backdrop ${state.menu ? "open" : ""}" data-action="close-menu" aria-label="Close navigation" tabindex="-1"></button><aside class="sidebar ${state.menu ? "open" : ""}" id="sidebar"><a class="brand" data-route href="/arena/replay" aria-label="Sentry Loop home">${logo()}<span>sentry loop</span></a><div class="workspace"><span class="workspace-icon">E</span><div><strong>Enterprise</strong><small>Sandbox workspace</small></div></div><nav aria-label="Main navigation"><div class="nav-label">WORKSPACE</div><div class="nav-links">${navigation.map(([label, glyph, path, section, nested]) => `<a data-route href="${path}" class="nav-link ${nested ? "nested" : ""} ${current.section === section ? "active" : ""}" ${current.section === section ? 'aria-current="page"' : ""}>${icon(glyph, 18)}<span>${label}</span></a>`).join("")}</div></nav><div class="sidebar-bottom"><div class="workspace-context"><div class="workspace-status"><span class="status-dot" ${!state.connected ? 'style="background:#B65364"' : ""}></span>${state.connected ? "Workspace connected" : "Connecting to workspace"}</div><p>3 agents. 3 systems.<br>One continuous learning loop.</p></div><div class="profile"><span class="avatar">SL</span><div><strong>Personal workspace</strong><small>${state.connections?.public ? "Hosted session" : "Local session"}</small></div></div></div></aside><div class="main-workspace"><div class="topbar"><div class="breadcrumb"><button class="mobile-menu" data-action="toggle-menu" aria-label="Open navigation" aria-expanded="${state.menu}" aria-controls="sidebar">${icon("menu", 19)}</button><span class="crumb-icon muted">${icon("database", 15)}</span><span class="crumb-label muted">Workspace</span><span class="crumb-icon muted">${icon("chevron", 12)}</span><span class="workspace-crumb">Enterprise sandbox</span></div><div class="topbar-meta">${badge(state.connections?.public ? "Demo workspace" : "Local workspace", "success", true)}<span class="mono muted">OpenEnv</span></div></div><main class="page" id="main-content" tabindex="-1" aria-labelledby="page-title">${content}</main></div></div>`;
+  return `<div class="app-shell"><button class="menu-backdrop ${state.menu ? "open" : ""}" data-action="close-menu" aria-label="Close navigation" tabindex="-1"></button><aside class="sidebar ${state.menu ? "open" : ""}" id="sidebar"><a class="brand" data-route href="/results" aria-label="Sentry Loop home">${logo()}<span>sentry loop</span></a><div class="workspace"><span class="workspace-icon">E</span><div><strong>Enterprise</strong><small>Sandbox workspace</small></div></div><nav aria-label="Main navigation"><div class="nav-label">WORKSPACE</div><div class="nav-links">${navigation.map(([label, glyph, path, section, nested]) => `<a data-route href="${path}" class="nav-link ${nested ? "nested" : ""} ${current.section === section ? "active" : ""}" ${current.section === section ? 'aria-current="page"' : ""}>${icon(glyph, 18)}<span>${label}</span></a>`).join("")}</div></nav><div class="sidebar-bottom"><div class="workspace-context"><div class="workspace-status"><span class="status-dot" ${!state.connected ? 'style="background:#B65364"' : ""}></span>${state.connected ? "Workspace connected" : "Connecting to workspace"}</div><p>3 agents. 3 systems.<br>One continuous learning loop.</p></div><div class="profile"><span class="avatar">SL</span><div><strong>Personal workspace</strong><small>${state.connections?.public ? "Hosted session" : "Local session"}</small></div></div></div></aside><div class="main-workspace"><div class="topbar"><div class="breadcrumb"><button class="mobile-menu" data-action="toggle-menu" aria-label="Open navigation" aria-expanded="${state.menu}" aria-controls="sidebar">${icon("menu", 19)}</button><span class="crumb-icon muted">${icon("database", 15)}</span><span class="crumb-label muted">Workspace</span><span class="crumb-icon muted">${icon("chevron", 12)}</span><span class="workspace-crumb">Enterprise sandbox</span></div><div class="topbar-meta">${badge(state.connections?.public ? "Demo workspace" : "Local workspace", "success", true)}<span class="mono muted">OpenEnv</span></div></div><main class="page" id="main-content" tabindex="-1" aria-labelledby="page-title">${content}</main></div></div>`;
 }
 function render({ restoreFocus = true } = {}) {
   const current = route(),
@@ -141,6 +139,10 @@ function render({ restoreFocus = true } = {}) {
     content =
       header("Page not found", "This view isn’t part of the workspace.") +
       `<section class="empty"><h2>Let’s get you back to the Arena.</h2>${linkButton("Open Arena", "/arena/replay", "primary", "arrow")}</section>`;
+  else if (current.section === "results")
+    content = resultsPage(state);
+  else if (current.section === "arena" && current.view !== "replay")
+    content = resultsPage(state);
   else if (current.section === "arena")
     content = arenaPage(state, current.view);
   else if (current.section === "compare")
@@ -172,6 +174,11 @@ function render({ restoreFocus = true } = {}) {
     destroyTerminals();
   }
   app.innerHTML = shell(content, current);
+  if (showArena) {
+    const menu = app.querySelector("#arena-menu-panel nav");
+    menu?.replaceChildren();
+    menu?.insertAdjacentHTML("afterbegin", `<a data-route href="/results">Results${icon("chevron", 13)}</a>`);
+  }
   if (retainedGraph)
     document.getElementById("arena-graph-host")?.replaceWith(retainedGraph);
   if (retainedTerminals)
@@ -321,7 +328,7 @@ async function runEpisode() {
     };
     completed = true;
     announce(
-      `Episode complete. Seed ${seed}, ${policyName(policy)} policy, worker reward ${state.episode.scores.worker}.`,
+      `Episode complete. Seed ${seed}, ${policyName(policy)} policy.`,
     );
   } catch (error) {
     state.errors.arena = error.message;
@@ -479,7 +486,8 @@ function ensureData() {
   )
     void inspectSeed();
   if (
-    current.section === "compare" &&
+    (["results", "compare"].includes(current.section) ||
+      (current.section === "arena" && current.view !== "replay")) &&
     !state.comparison &&
     !state.pending.compare &&
     !state.errors.compare
@@ -681,6 +689,22 @@ function compareDetail(policy, tick) {
   );
 }
 
+function openScorecardAttack(policy, tick, agent = "attacker") {
+  const episode = state.comparison?.[policy];
+  if (!episode) return;
+  const index = replayEntryIndex(episode, tick, agent);
+  if (index < 0) return;
+  state.seed = episode.seed;
+  state.policy = policy;
+  state.episode = episode;
+  if (state.environment?.seed !== episode.seed) state.environment = null;
+  seekReplay(index);
+  navigate("/arena/replay");
+  state.arenaPanel = "history";
+  render({ restoreFocus: false });
+  announce(`${policyName(policy)} replay at tick ${tick}.`);
+}
+
 document.addEventListener("click", (event) => {
   const link = event.target.closest("a[data-route]");
   if (
@@ -818,6 +842,14 @@ document.addEventListener("click", (event) => {
   }
   if (action === "compare-detail") {
     compareDetail(element.dataset.policy, Number(element.dataset.tick));
+    return;
+  }
+  if (action === "open-scorecard-attack") {
+    openScorecardAttack(
+      element.dataset.policy,
+      Number(element.dataset.tick),
+      element.dataset.agent || "attacker",
+    );
     return;
   }
   if (action === "open-hf-live") {
@@ -983,8 +1015,9 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && event.target.id === "seed-input") {
     event.preventDefault();
     const section = route().section;
-    if (section === "arena") void runEpisode();
-    else if (section === "compare") void runComparison();
+    if (section === "arena" && route().view === "replay") void runEpisode();
+    else if (section === "arena") void runComparison();
+    else if (section === "compare" || section === "results") void runComparison();
     else if (section === "environment") {
       state.episode = null;
       void inspectSeed();
