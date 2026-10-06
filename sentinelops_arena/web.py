@@ -169,6 +169,8 @@ def find_training(run_id: str) -> dict:
 
 
 def simulate(seed: int, policy: str) -> dict:
+    from sentinelops_arena.metrics import compute_scorecard
+
     log, scores = run_episode(
         seed=seed,
         trained=policy == "resilient",
@@ -180,12 +182,14 @@ def simulate(seed: int, policy: str) -> dict:
         "policy_type": "heuristic",
         "ticks": 30,
         "log": log,
-        "scores": scores,
-        "metrics": compute_episode_metrics(log),
+        "scorecard": compute_scorecard(log),
+        "legacy": {
+            "scores": scores,
+            "metrics": compute_episode_metrics(log),
+        },
         "notes": [
             "Final scores include downstream rewards not assigned to a replay action.",
-            "Security metrics are the original simulator's reward-based proxies.",
-            "Refusal responses are counted separately from injected messages.",
+            "Scorecard outcomes use the episode log and ground truth.",
         ],
     }
 
@@ -545,6 +549,8 @@ def export_training():
 
 UI_ROUTES = {
     "",
+    "results",
+    "results/scorecard",
     "arena",
     "arena/replay",
     "arena/analytics",
