@@ -22,14 +22,26 @@ const state = (scorecard = fixture.expected) => ({
 
 test("Results renders scorecard values and attack links for both policies", () => {
   const html = resultsPage(state());
+  assert.match(html, /<\/header><section class="metrics/);
+  assert.ok(html.indexOf('class="metrics') < html.indexOf('class="columns paired"'));
+  assert.ok(html.indexOf('class="columns paired"') < html.indexOf('class="config"'));
   assert.match(html, /Attack success/);
   assert.match(html, /50\.0% → 50\.0%/);
   assert.match(html, /Benign completion/);
   assert.match(html, /Social engineering resisted/);
   assert.match(html, /data-action="open-scorecard-attack" data-policy="baseline" data-tick="0"/);
   assert.match(html, /data-action="open-scorecard-attack" data-policy="resilient" data-tick="5"/);
-  assert.match(html, /Policy drift · Succeeded/);
-  assert.match(html, /Social engineering · Blocked/);
+  const attack = html.match(/<button[^>]*data-policy="baseline" data-tick="0"[^>]*>(.*?)<\/button>/s)?.[1];
+  assert.ok(attack);
+  assert.match(attack, />00<\/span>/);
+  assert.match(attack, /Attack type: policy_drift/);
+  assert.match(attack, /Target: billing/);
+  assert.match(attack, /Outcome: succeeded/);
+  assert.match(attack, /Worker action: issue_refund/);
+  assert.match(attack, /Violated rules: policy_violation/);
+  assert.match(html, /Attack type: social_engineering/);
+  assert.match(html, /Outcome: blocked/);
+  assert.match(html, /Violated rules: None/);
   assert.doesNotMatch(html, /98\.8%|12\.3%|Oversight accuracy|proxy/i);
 });
 
@@ -63,9 +75,15 @@ test("Replay lookup resolves the launch row at a tick", () => {
 test("Attack fields are escaped in Results", () => {
   const scorecard = {
     ...fixture.expected,
-    per_attack: [{ ...fixture.expected.per_attack[0], target: '<img src=x onerror=alert(1)>' }],
+    per_attack: [{
+      ...fixture.expected.per_attack[0],
+      target: '<img src=x onerror=alert(1)>',
+      violated_rules: ['<script>alert(1)</script>'],
+    }],
   };
   const html = resultsPage(state(scorecard));
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<img src=x/);
+  assert.doesNotMatch(html, /<script>/);
 });
