@@ -225,6 +225,7 @@ class SentinelOpsArena(MCPEnvironment):
         self.scores: Dict[AgentRole, float] = {r: 0.0 for r in AgentRole}
         self.trajectory: List[Dict[str, Any]] = []
         self.last_worker_result: Optional[Dict[str, Any]] = None
+        self.last_attack_result: Optional[Dict[str, Any]] = None
         self.last_ground_truth: Optional[TickGroundTruth] = None
         self._state = SentinelState(
             episode_id=str(uuid4()), step_count=0
@@ -270,6 +271,7 @@ class SentinelOpsArena(MCPEnvironment):
         self.scores = {r: 0.0 for r in AgentRole}
         self.trajectory = []
         self.last_worker_result = None
+        self.last_attack_result = None
         self.last_ground_truth = None
 
         self._state = SentinelState(
@@ -375,6 +377,7 @@ class SentinelOpsArena(MCPEnvironment):
     # -------------------------------------------------------------------
 
     def _process_attacker(self, action: SentinelAction) -> float:
+        self.last_attack_result = None
         if action.action_type == "pass":
             return 0.0
 
@@ -391,6 +394,7 @@ class SentinelOpsArena(MCPEnvironment):
             result = self.attack_manager.launch_attack(
                 attack_type, target, params, self.tick
             )
+            self.last_attack_result = result
             # Clean non-serializable refs
             for atk in self.attack_manager.active_attacks:
                 atk["params"].pop("task_queue", None)
