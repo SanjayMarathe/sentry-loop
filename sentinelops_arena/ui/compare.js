@@ -21,18 +21,11 @@ export function resultsPage(state, view = "scorecard") {
     "Results",
     "Compare policy outcomes from the same attack seed.",
     button(busy ? "Comparing…" : "Run comparison", "run-comparison", "primary", "play", busy),
-  ) + arenaConfig(state, true);
+  );
   if (!comparison) {
     return content + (state.errors.compare
       ? errorNote(state.errors.compare, "run-comparison")
-      : loading("Running both policies on the same seed…"));
-  }
-  if (state.errors.compare) content += errorNote(state.errors.compare, "run-comparison");
-  if (Number(state.seed) !== comparison.seed) {
-    content += note(
-      "Configuration changed",
-      `Showing the completed comparison for seed ${comparison.seed}. Run the comparison to apply your new seed.`,
-    );
+      : loading("Running both policies on the same seed…")) + arenaConfig(state, true);
   }
   const b = comparison.baseline.scorecard;
   const r = comparison.resilient.scorecard;
@@ -42,6 +35,14 @@ export function resultsPage(state, view = "scorecard") {
     "Baseline → Resilient",
   ]), "compare-metrics");
   content += `<div class="columns paired">${["baseline", "resilient"].map((policy) => policyCard(comparison[policy])).join("")}</div>`;
+  content += arenaConfig(state, true);
+  if (state.errors.compare) content += errorNote(state.errors.compare, "run-comparison");
+  if (Number(state.seed) !== comparison.seed) {
+    content += note(
+      "Configuration changed",
+      `Showing the completed comparison for seed ${comparison.seed}. Run the comparison to apply your new seed.`,
+    );
+  }
   if (view === "replays") content += replayRows(comparison);
   return content + footer(
     "Each attack row opens its launch tick in the Arena replay.",
@@ -79,8 +80,8 @@ function policyCard(episode) {
 }
 
 function attackRow(policy, attack) {
-  const outcome = titleCase(attack.outcome);
-  return `<button type="button" class="pair-replay-row" data-action="open-scorecard-attack" data-policy="${h(policy)}" data-tick="${h(attack.tick)}" aria-label="${h(policyName(policy))}, tick ${h(attack.tick)}, ${h(titleCase(attack.attack_type))}, ${h(outcome)}"><span>${pad(attack.tick)}</span><span><strong>${h(titleCase(attack.attack_type))} · ${h(outcome)}</strong><small title="${h(attack.target)} · ${h(attack.worker_action)}">${h(attack.target)} · ${h(titleCase(attack.worker_action || "No worker action"))}</small></span><span>→</span></button>`;
+  const rules = attack.violated_rules.length ? attack.violated_rules.join(", ") : "None";
+  return `<button type="button" class="pair-replay-row" data-action="open-scorecard-attack" data-policy="${h(policy)}" data-tick="${h(attack.tick)}"><span>${pad(attack.tick)}</span><span><strong>Attack type: ${h(attack.attack_type)}</strong><div>Target: ${h(attack.target)}</div><div>Outcome: ${h(attack.outcome)}</div><div>Worker action: ${h(attack.worker_action || "None")}</div><div>Violated rules: ${h(rules)}</div></span><span>→</span></button>`;
 }
 
 function replayRows(comparison) {
