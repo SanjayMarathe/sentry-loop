@@ -411,7 +411,7 @@ def run_episode(
         else:
             action = oversight.act(obs)
 
-        task_context = deepcopy(obs.current_task) if include_details else None
+        task_context = deepcopy(obs.current_task)
         obs = env.step(action)
 
         replay_log.append(
@@ -428,18 +428,27 @@ def run_episode(
                 ),
                 "flag": action.flag,
                 "explanation": action.explanation or "",
+                # Recorded scoring inputs; these do not affect the action or reward.
+                "parameters": deepcopy(action.parameters),
+                "task": task_context if agent == AgentRole.WORKER else None,
+                "result": deepcopy(env.last_worker_result) if agent == AgentRole.WORKER else None,
+                "ground_truth": (
+                    env.last_ground_truth.model_dump(mode="json")
+                    if agent == AgentRole.WORKER and env.last_ground_truth else None
+                ),
+                "attack_result": (
+                    deepcopy(env.attack_manager.active_attacks[-1]["result"])
+                    if agent == AgentRole.ATTACKER
+                    and action.action_type == "launch_attack"
+                    and env.attack_manager.active_attacks
+                    and env.attack_manager.active_attacks[-1]["tick"] == tick
+                    else None
+                ),
             }
         )
         if include_details:
             replay_log[-1].update({
-                "parameters": deepcopy(action.parameters),
                 "response": action.response_text or "",
-                "result": deepcopy(env.last_worker_result) if agent != AgentRole.ATTACKER else None,
-                "task": task_context if agent == AgentRole.WORKER else None,
-                "ground_truth": (
-                    env.last_ground_truth.model_dump(mode="json")
-                    if agent != AgentRole.ATTACKER and env.last_ground_truth else None
-                ),
             })
 
     final_scores = {r.value: round(s, 2) for r, s in env.scores.items()}
