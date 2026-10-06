@@ -48,7 +48,8 @@ def test_comparison_matches_independent_policy_runs(client):
         assert result[policy]["seed"] == 42
         assert result[policy]["policy"] == policy
         assert result[policy]["scores"] == independent["scores"]
-        assert result[policy]["metrics"] == independent["metrics"]
+        assert result[policy]["scorecard"] == independent["scorecard"]
+        assert result[policy]["legacy"] == independent["legacy"]
     assert result["baseline"]["scores"] != result["resilient"]["scores"]
 
 
@@ -117,7 +118,7 @@ def test_concurrent_runs_do_not_mix_random_seeds():
             assert response.status_code == 200
             episode = response.json()
             # System-created record IDs use UUIDs; compare decisions and outcomes.
-            return episode["scores"], episode["metrics"], [
+            return episode["scores"], episode["scorecard"], [
                 (row["tick"], row["agent"], row["action_type"], row["reward"])
                 for row in episode["log"]
             ]

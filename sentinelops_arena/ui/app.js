@@ -79,6 +79,7 @@ const state = {
 const navigation = [
   ["Results", "compare", "/results", "results"],
   ["Arena", "arena", "/arena/replay", "arena"],
+  ["Guide", "book", "/guide", "guide"],
 ];
 const defaults = {
   results: "scorecard",
@@ -106,6 +107,7 @@ function route() {
   const valid =
     Object.hasOwn(allowed, section) &&
     bits.length <= 2 &&
+    (!["environment", "training", "connections"].includes(section) || new URLSearchParams(location.search).get("dev") === "1") &&
     (["guide", "connections"].includes(section)
       ? !bits[1]
       : allowed[section].includes(view));

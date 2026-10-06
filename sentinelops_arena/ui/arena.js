@@ -45,7 +45,7 @@ export function arenaConfig(state, comparison = false) {
 export function arenaPage(state, view) {
   if (view === "replay") return immersiveArena(state);
   const episode = state.episode,
-    m = episode?.metrics,
+    m = episode?.scorecard,
     busy = state.pending.arena;
   const metrics = episode
     ? [
@@ -60,23 +60,21 @@ export function arenaPage(state, view) {
           `Across ${new Set(episode.log.filter((r) => r.action_type === "launch_attack").map((r) => r.parameters.attack_type)).size} attack types`,
         ],
         [
-          "Oversight accuracy",
-          percent(m.oversight_accuracy),
-          `${Math.round(m.oversight_accuracy * m.total_oversight)} of ${m.total_oversight} decisions · reported`,
+          "Benign completion",
+          percent(m.benign_completion_rate),
+          `${Math.round(m.benign_completion_rate * m.totals.benign_tasks)} of ${m.totals.benign_tasks} tasks`,
         ],
         [
-          "Flags raised",
-          String(m.total_flags),
-          m.total_flags
-            ? "Review the flagged actions"
-            : "No flags in this episode",
+          "Attack success",
+          percent(m.attack_success_rate),
+          `${m.totals.attacks} attacks in this episode`,
         ],
       ]
     : [
         ["Worker reward", "—", "Run an episode to see results"],
         ["Attacks launched", "—", "Waiting for the first episode"],
-        ["Oversight accuracy", "—", "No decisions to review yet"],
-        ["Flags raised", "—", "No flags yet"],
+        ["Benign completion", "—", "No tasks to review yet"],
+        ["Attack success", "—", "No attacks to review yet"],
       ];
   return (
     header(
@@ -291,11 +289,11 @@ function timeline(episode) {
     "Attack timeline",
     "When the environment changed",
     `<div class="timeline">${rows}<div class="timeline-axis"><span>00</span><span>10</span><span>20</span><span>29</span></div></div>`,
-    badge(`${episode.metrics.total_attacks} attacks`),
+    badge(`${episode.scorecard.totals.attacks} attacks`),
   );
 }
 function analytics(episode) {
-  const m = episode.metrics,
+  const m = episode.scorecard,
     series = scoreSeries(episode);
   const scoreChart = panel(
     "Cumulative action reward",
@@ -304,28 +302,28 @@ function analytics(episode) {
       `<div class="chart-caption"><span>Recorded action rewards</span><span>Episode tick →</span></div>`,
     legend(series),
   );
-  const outcome = `<aside class="aside"><h2>Episode at a glance</h2>${infoRow("Attack success", percent(m.attack_success_rate), "Reported worker failures after attacks")}${infoRow("Task success", percent(m.benign_task_success), "Reward-based completion signal")}${infoRow("Drift adaptation", `${m.drifts_detected} / ${m.drift_events}`, "Subsequent schema or policy checks")}${infoRow("Detection time", m.attacks_detected ? `${number(m.mean_time_to_detect)} ticks` : "—", m.attacks_detected ? `${m.attacks_detected} defensive probes` : "No defensive probes recorded")}</aside>`;
+  const outcome = `<aside class="aside"><h2>Episode at a glance</h2>${infoRow("Attack success", percent(m.attack_success_rate), `${m.totals.attacks} launched attacks`)}${infoRow("Benign completion", percent(m.benign_completion_rate), `${m.totals.benign_tasks} non-attacked tasks`)}${infoRow("Over refusal", percent(m.over_refusal_rate), "Non-attacked tasks refused")}${infoRow("Detection time", m.mean_time_to_detect === null ? "—" : `${number(m.mean_time_to_detect)} ticks`, "Auditor flag on a ground-truth violation")}</aside>`;
   const measurements = table(
     ["MEASURE", "VALUE", "CONTEXT"],
     [
       [
-        "False positives / flags",
-        `<span class="mono">${m.false_positives} / ${m.total_flags}</span>`,
-        "Reported from the worker reward signal",
+        "Attack success",
+        `<span class="mono">${percent(m.attack_success_rate)}</span>`,
+        "Ground-truth violations in attack windows",
       ],
       [
-        "Refusal responses",
-        `<span class="mono">${m.social_eng_resisted}</span>`,
-        `${m.social_eng_total} social engineering injections`,
+        "Social engineering resisted",
+        `<span class="mono">${m.social_eng_resisted} / ${m.social_eng_total}</span>`,
+        "Responses to specifically targeted tasks",
       ],
       [
-        "Explanation quality",
-        `<span class="mono">${number(m.avg_explanation_quality, 3)}</span>`,
-        "Keyword-based explanation coverage",
+        "Benign completion",
+        `<span class="mono">${percent(m.benign_completion_rate)}</span>`,
+        "Successfully completed non-attacked tasks",
       ],
     ],
   );
-  return `<div class="columns">${scoreChart}${outcome}</div>${timeline(episode)}${panel("Security signals", "Read outcomes and detection together", measurements, "", "clip")}${note("Read the signals together", "These are the simulator’s reported metrics. Refusal responses and injected messages are separate counts; inspect the replay to understand what happened.", "info")}`;
+  return `<div class="columns">${scoreChart}${outcome}</div>${timeline(episode)}${panel("Ground-truth outcomes", "Read outcomes and detection together", measurements, "", "clip")}`;
 }
 function rewards(episode) {
   const roles = ["worker", "attacker", "oversight"];

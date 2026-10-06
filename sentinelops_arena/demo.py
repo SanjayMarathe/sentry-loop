@@ -437,11 +437,9 @@ def run_episode(
                     if agent == AgentRole.WORKER and env.last_ground_truth else None
                 ),
                 "attack_result": (
-                    deepcopy(env.attack_manager.active_attacks[-1]["result"])
+                    deepcopy(env.last_attack_result)
                     if agent == AgentRole.ATTACKER
                     and action.action_type == "launch_attack"
-                    and env.attack_manager.active_attacks
-                    and env.attack_manager.active_attacks[-1]["tick"] == tick
                     else None
                 ),
             }

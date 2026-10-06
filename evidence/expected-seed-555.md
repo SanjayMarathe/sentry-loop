@@ -1,6 +1,6 @@
 # Seed 555 scorecard audit
 
-Computed independently from `evidence/seed-555.json` under `docs/scorecard-schema.md`. The two policies have the same 30 task IDs and ten `launch_attack` rows. The table below treats the three visibly injected next-tick messages as successful launches targeting `TASK-003`, `TASK-017`, and `TASK-019`, respectively. See the ambiguity notes about the missing `attack_result` field.
+Computed independently from the original `demo-render` episode logs under `docs/scorecard-schema.md`. The two policies have the same 30 task IDs and ten `launch_attack` rows. The three injections target `TASK-003`, `TASK-017`, and `TASK-019`. The regenerated `seed-555.json` on this branch now records those launch results explicitly.
 
 ## Expected scorecards
 
@@ -44,9 +44,9 @@ Baseline has no `respond` rows. Resilient responds at ticks 12, 15, 21, and 29. 
 
 The baseline auditor flags the violating worker actions at ticks 6 and 9 in the tick-6 policy window. The earliest matching detection is tick 6, so delay is `6 - 6 = 0`. Its other flags do not add detected attacks. The resilient worker has no matching violation or auditor flag, so detection time is `null`.
 
-## Ambiguities in the checked-in trace
+## Ambiguities found in the original trace
 
-- The attacker rows have `parameters` but **no `attack_result`**, although the schema requires it. The three `target_task` values above are reconstructed from the injected messages appearing on the next tasks, consistent with the simulator selecting the next unprocessed task. Launch rewards of `-0.3` and the visible state changes support successful launches, but this is still an inference rather than a logged result. A strict consumer of only this JSON cannot verify `social_eng_total` or its targeted-task windows directly.
+- The original `demo-render` attacker rows had `parameters` but no `attack_result`. The three target tasks were reconstructed from injected messages during the independent audit. The new episode logger records each launch result and target task directly, so the regenerated evidence no longer has this gap.
 - The baseline's tick-9 violation lies in both the tick-6 policy and tick-8 schema windows. Its rule is `policy_violation`, so it supports the policy attack only. The tick-10 policy violation is outside the tick-6 window. Overlapping windows do not create extra attacks or duplicate benign tasks.
 - The schema's phrase “target-matching `get_current_policy`” must distinguish `refund` for billing from `sla` for ticketing. Otherwise the tick-22 read could incorrectly mark the tick-19 ticketing attack blocked.
 - `mean_time_to_detect` here uses the first qualifying auditor flag for each detected attack. The schema does not explicitly say whether a second flag within one attack's window should contribute another delay; counting both tick-6 and tick-9 flags as separate detections would instead average delays 0 and 3 to `1.5`. One detected attack with first detection at tick 6 yields `0.0`.

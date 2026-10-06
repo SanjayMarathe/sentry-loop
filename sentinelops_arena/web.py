@@ -23,6 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sentinelops_arena.demo import run_episode
 from sentinelops_arena.environment import SentinelOpsArena
 from sentinelops_arena.metrics import compute_episode_metrics
+from sentinelops_arena.scorecard import compute_scorecard
 from sentinelops_arena.connections import status as connection_status, check_accounts
 from sentinelops_arena.live import evaluate
 from sentinelops_arena.learning import train_policy, load_checkpoint
@@ -169,8 +170,6 @@ def find_training(run_id: str) -> dict:
 
 
 def simulate(seed: int, policy: str) -> dict:
-    from sentinelops_arena.metrics import compute_scorecard
-
     log, scores = run_episode(
         seed=seed,
         trained=policy == "resilient",
@@ -182,11 +181,9 @@ def simulate(seed: int, policy: str) -> dict:
         "policy_type": "heuristic",
         "ticks": 30,
         "log": log,
+        "scores": scores,
         "scorecard": compute_scorecard(log),
-        "legacy": {
-            "scores": scores,
-            "metrics": compute_episode_metrics(log),
-        },
+        "legacy": compute_episode_metrics(log),
         "notes": [
             "Final scores include downstream rewards not assigned to a replay action.",
             "Scorecard outcomes use the episode log and ground truth.",
