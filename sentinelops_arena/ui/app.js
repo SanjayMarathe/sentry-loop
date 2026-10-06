@@ -143,8 +143,6 @@ function render({ restoreFocus = true } = {}) {
       `<section class="empty"><h2>Let’s get you back to the Arena.</h2>${linkButton("Open Arena", "/arena/replay", "primary", "arrow")}</section>`;
   else if (current.section === "results")
     content = resultsPage(state);
-  else if (current.section === "arena" && current.view !== "replay")
-    content = resultsPage(state);
   else if (current.section === "arena")
     content = arenaPage(state, current.view);
   else if (current.section === "compare")
@@ -488,8 +486,7 @@ function ensureData() {
   )
     void inspectSeed();
   if (
-    (["results", "compare"].includes(current.section) ||
-      (current.section === "arena" && current.view !== "replay")) &&
+    ["results", "compare"].includes(current.section) &&
     !state.comparison &&
     !state.pending.compare &&
     !state.errors.compare
