@@ -1,0 +1,43 @@
+name: Pilot checks
+on:
+  push:
+    branches: [pilot-v1]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pilot
+          POSTGRES_PASSWORD: pilot_test_password
+          POSTGRES_DB: pilot_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pilot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://pilot:pilot_test_password@localhost:5432/pilot_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.23"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+      - run: npm ci
+      - run: npm run test:graph
+      - run: node --test tests/scorecard-ui.test.mjs tests/arena-terminal-format.test.mjs
+      - name: Backup and restore on disposable databases
+        run: |
+          PGPASSWORD=pilot_test_password psql -h localhost -U pilot -d pilot_test -c "INSERT INTO pilot_evaluations (id, owner_email, status, model, case_ids, report) VALUES ('123e4567-e89b-12d3-a456-426614174000', 'backup@example.com', 'completed', 'fake', '[]', '{\"cases\":[]}')"
+          scripts/pilot-backup.sh "$DATABASE_URL" /tmp/pilot-test.dump
+          PGPASSWORD=pilot_test_password createdb -h localhost -U pilot pilot_restore
+          scripts/pilot-restore.sh /tmp/pilot-test.dump postgresql://pilot:pilot_test_password@localhost:5432/pilot_restore
+          test "$(PGPASSWORD=pilot_test_password psql -h localhost -U pilot -d pilot_restore -Atc "SELECT count(*) FROM pilot_evaluations WHERE owner_email='backup@example.com'")" = "1"

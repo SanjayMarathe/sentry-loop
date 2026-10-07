@@ -67,3 +67,7 @@ node --test tests/arena-terminal-format.test.mjs
 ```
 
 Frontend runtime bundles are checked in, so Node is only needed when rebuilding or testing them.
+
+## Private model pilot
+
+The separate `pilot-v1` service evaluates our model on isolated synthetic systems. See [pilot deployment, security, and validation notes](docs/PILOT.md). The scripted demo and its deployment remain separate.

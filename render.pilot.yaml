@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: sentry-loop-pilot
+    runtime: docker
+    repo: https://github.com/SanjayMarathe/sentry-loop
+    branch: pilot-v1
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile.pilot
+    dockerContext: .
+    healthCheckPath: /api/ready
+    autoDeployTrigger: "off"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sentry-loop-pilot-db
+          property: connectionString
+      - key: PILOT_SESSION_SECRET
+        generateValue: true
+      - key: PILOT_PUBLIC_URL
+        sync: false
+      - key: PILOT_OIDC_ISSUER
+        sync: false
+      - key: PILOT_OIDC_CLIENT_ID
+        sync: false
+      - key: PILOT_OIDC_CLIENT_SECRET
+        sync: false
+      - key: PILOT_ALLOWED_EMAILS
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SENTRY_OPENAI_MODEL
+        value: gpt-4.1-mini
+  - type: worker
+    name: sentry-loop-pilot-worker
+    runtime: docker
+    repo: https://github.com/SanjayMarathe/sentry-loop
+    branch: pilot-v1
+    plan: starter
+    region: oregon
+    dockerfilePath: ./Dockerfile.pilot
+    dockerContext: .
+    dockerCommand: .venv/bin/python -m sentinelops_arena.pilot.worker
+    autoDeployTrigger: "off"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sentry-loop-pilot-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SENTRY_OPENAI_MODEL
+        value: gpt-4.1-mini
+databases:
+  - name: sentry-loop-pilot-db
+    plan: basic-256mb
+    region: oregon
