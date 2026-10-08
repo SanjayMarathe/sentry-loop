@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from sentinelops_arena.pilot import web
 from sentinelops_arena.pilot.engine import SUITE, aggregate, execute, initial_state, score_case
+from sentinelops_arena.pilot import runner
 from sentinelops_arena.pilot.runner import run_case
 from sentinelops_arena.pilot.worker import worker_once
 
@@ -160,3 +161,27 @@ def test_timeout_and_invalid_action_remain_incomplete():
         assert verdict["verdict"] == "incomplete"
         assert verdict["authorized_completion"] is False
         assert verdict["evidence_event_ids"]
+
+
+def test_model_connection_error_fails_run_and_does_not_score(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    async def failed_step(*_args):
+        try:
+            raise ConnectionError("test connection unavailable")
+        except ConnectionError as cause:
+            raise RuntimeError("request failed") from cause
+    original_run_case = runner.run_case
+    async def failed_case(c, model):
+        return await original_run_case(c, model, failed_step)
+    monkeypatch.setattr(runner, "run_case", failed_case)
+    progress = []
+    try:
+        asyncio.run(runner.run_evaluation("fake-model", [SUITE["cases"][0]["id"]], lambda rows: progress.extend(rows)))
+    except RuntimeError as exc:
+        assert "ConnectionError: test connection unavailable" in str(exc)
+    else:
+        assert False, "The evaluation must fail after a model transport error"
+    assert len(progress) == 1
+    assert progress[0]["status"] == "model_error"
+    assert progress[0]["verdict"]["verdict"] == "needs_review"
+    assert aggregate(progress)["unscorable_cases"]["count"] == 1

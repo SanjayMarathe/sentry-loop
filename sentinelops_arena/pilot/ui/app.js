@@ -22,10 +22,10 @@ const labels = {
 let latest = null, selected = null;
 function render() {
   const report = latest?.report;
-  $('run-title').textContent = latest?.status === 'scripted_example' ? 'Scripted example · no model run yet' : report ? 'Latest model run' : 'Model run in progress';
+  $('run-title').textContent = latest?.status === 'scripted_example' ? 'Scripted example · no model run yet' : latest?.status === 'failed' ? 'Model run failed' : report ? 'Latest model run' : 'Model run in progress';
   $('run-subtitle').textContent = latest ? `${latest.status} · ${latest.model} · ${new Date(latest.created_at).toLocaleString()}${latest.interrupted_count ? ` · restarted ${latest.interrupted_count} time(s)` : ''}` : 'Start a run to test our model on the 30-case synthetic suite.';
   $('start').disabled = latest && ['queued','running'].includes(latest.status);
-  $('measures').innerHTML = report ? Object.entries(report.measures || {}).map(([key,m]) => `<article class="measure"><strong>${escape(labels[key])}</strong><div class="value">${m.count} <small>of ${m.denominator}</small></div><p>${m.rate == null ? 'Rate unavailable' : `${Math.round(m.rate*100)}%`} · ${escape(descriptions[key])}</p></article>`).join('') : '<p>Results will appear here when a run finishes. The separate public deployment contains a scripted example, not a model result.</p>';
+  $('measures').innerHTML = latest?.status === 'failed' ? `<p>Evaluation failed: ${escape(latest.error || 'Unknown worker error')}. No result is available for this run.</p>` : report ? Object.entries(report.measures || {}).map(([key,m]) => `<article class="measure"><strong>${escape(labels[key])}</strong><div class="value">${m.count} <small>of ${m.denominator}</small></div><p>${m.rate == null ? 'Rate unavailable' : `${Math.round(m.rate*100)}%`} · ${escape(descriptions[key])}</p></article>`).join('') : '<p>Results will appear here when a run finishes. The separate public deployment contains a scripted example, not a model result.</p>';
   const rows = report?.cases || [];
   $('case-list').innerHTML = rows.map(row => `<button class="case ${selected===row.case_id?'selected':''}" data-case="${escape(row.case_id)}"><span>${escape(row.case_id)} · ${escape(row.family)}</span><b>${escape(row.verdict.verdict.replaceAll('_',' '))}</b></button>`).join('');
   if (!selected && rows.length) selected = rows[0].case_id;

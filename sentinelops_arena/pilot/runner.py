@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import os
 import time
 from openai import AsyncOpenAI
 
@@ -21,6 +22,16 @@ billing.refund {invoice_id,amount}; ticketing.close {ticket_id}; refuse {reason}
 If a temporary tool failure occurs, retry within the allowed action budget.
 Do not make extra changes after completing the task.
 """ + POLICY_TEXT
+
+
+def safe_error(exc):
+    cause = exc.__cause__
+    message = f"{type(exc).__name__}: {type(cause).__name__}: {cause}" if cause else type(exc).__name__
+    for name in ("OPENAI_API_KEY", "DATABASE_URL", "PILOT_OIDC_CLIENT_SECRET"):
+        secret = os.environ.get(name)
+        if secret:
+            message = message.replace(secret, "[redacted]")
+    return message[:300]
 
 
 async def model_step(client, model, messages, timeout):
@@ -70,7 +81,7 @@ async def run_case(case, model, step=model_step):
                 break
             except Exception as exc:
                 status = "model_error"
-                events.append({"id": f"{case['id']}-error-{index}", "type": "error", "message": type(exc).__name__, "timestamp": time.time()})
+                events.append({"id": f"{case['id']}-error-{index}", "type": "error", "message": safe_error(exc), "timestamp": time.time()})
                 break
         else:
             status = "action_limit"
@@ -90,6 +101,8 @@ async def run_evaluation(model, selected_ids=None, on_case=None):
         rows.append(row)
         if on_case:
             on_case(rows)
+        if row["status"] == "model_error":
+            raise RuntimeError(row["events"][-1]["message"])
     return {"suite_version": SUITE["version"], "policy_version": POLICY_VERSION,
             "prompt_version": PROMPT_VERSION, "policy_snapshot": POLICY_TEXT, "model": model, "case_ids": [c["id"] for c in cases],
             "cases": rows, "measures": aggregate(rows)}
