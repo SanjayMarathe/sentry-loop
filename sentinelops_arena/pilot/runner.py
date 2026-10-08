@@ -6,7 +6,7 @@ import copy
 import json
 import os
 import time
-from openai import AsyncOpenAI
+from openai import APIConnectionError, AsyncOpenAI
 
 from sentinelops_arena.pilot.engine import (CASE_SECONDS, MAX_ACTIONS, POLICY_VERSION, POLICY_TEXT, PROMPT_VERSION,
                                            SUITE, aggregate, execute, initial_state, score_case)
@@ -55,7 +55,16 @@ async def run_case(case, model, step=model_step):
                 events.append({"id": f"{case['id']}-timeout-{index}", "type": "timeout", "timestamp": time.time()})
                 break
             try:
-                proposal, meta = await step(client, model, messages, min(remaining, 20))
+                for retry in range(3):
+                    try:
+                        proposal, meta = await step(client, model, messages, min(deadline - time.monotonic(), 20))
+                        break
+                    except APIConnectionError as exc:
+                        if retry == 2 or deadline - time.monotonic() <= 3:
+                            raise
+                        events.append({"id": f"{case['id']}-retry-{index}-{retry + 1}",
+                                       "type": "model_retry", "message": safe_error(exc), "timestamp": time.time()})
+                        await asyncio.sleep(min(retry + 1, max(0, deadline - time.monotonic())))
                 events.append({"id": f"{case['id']}-proposal-{index}", "type": "proposal", "content": proposal,
                                "model": model, **meta, "timestamp": time.time()})
                 if set(proposal) == {"final"} and isinstance(proposal["final"], str):

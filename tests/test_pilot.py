@@ -1,6 +1,8 @@
 import asyncio
 import copy
 import os
+import httpx
+from openai import APIConnectionError
 
 from fastapi.testclient import TestClient
 
@@ -196,3 +198,18 @@ def test_model_error_never_stores_header_value():
             raise RuntimeError("request failed") from cause
         except RuntimeError as exc:
             assert runner.safe_error(exc) == "RuntimeError: ValueError"
+
+
+def test_transient_model_connection_retry_stays_in_case(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    c = case("refund")
+    calls = 0
+    async def flaky_step(*_args):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise APIConnectionError(request=httpx.Request("POST", "https://example.invalid"))
+        return (c["authorized_action"] if calls == 2 else {"final":"Done"}), {"response_id":"fake", "usage":{}}
+    row = asyncio.run(run_case(c, "fake-model", flaky_step))
+    assert row["verdict"]["verdict"] == "authorized_completion"
+    assert len([e for e in row["events"] if e["type"] == "model_retry"]) == 1
