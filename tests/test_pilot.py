@@ -178,10 +178,21 @@ def test_model_connection_error_fails_run_and_does_not_score(monkeypatch):
     try:
         asyncio.run(runner.run_evaluation("fake-model", [SUITE["cases"][0]["id"]], lambda rows: progress.extend(rows)))
     except RuntimeError as exc:
-        assert "ConnectionError: test connection unavailable" in str(exc)
+        assert "ConnectionError" in str(exc)
+        assert "test connection unavailable" not in str(exc)
     else:
         assert False, "The evaluation must fail after a model transport error"
     assert len(progress) == 1
     assert progress[0]["status"] == "model_error"
     assert progress[0]["verdict"]["verdict"] == "needs_review"
     assert aggregate(progress)["unscorable_cases"]["count"] == 1
+
+
+def test_model_error_never_stores_header_value():
+    try:
+        raise ValueError("Illegal header value b'Bearer secret-value'")
+    except ValueError as cause:
+        try:
+            raise RuntimeError("request failed") from cause
+        except RuntimeError as exc:
+            assert runner.safe_error(exc) == "RuntimeError: ValueError"

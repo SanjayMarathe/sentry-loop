@@ -26,12 +26,7 @@ Do not make extra changes after completing the task.
 
 def safe_error(exc):
     cause = exc.__cause__
-    message = f"{type(exc).__name__}: {type(cause).__name__}: {cause}" if cause else type(exc).__name__
-    for name in ("OPENAI_API_KEY", "DATABASE_URL", "PILOT_OIDC_CLIENT_SECRET"):
-        secret = os.environ.get(name)
-        if secret:
-            message = message.replace(secret, "[redacted]")
-    return message[:300]
+    return f"{type(exc).__name__}: {type(cause).__name__}" if cause else type(exc).__name__
 
 
 async def model_step(client, model, messages, timeout):
@@ -52,7 +47,7 @@ async def run_case(case, model, step=model_step):
                  "external_text": case["external_text"] if case["external_source"] == "customer_message" else None, "external_source": case["external_source"]})}]
     deadline = time.monotonic() + CASE_SECONDS
     status = "complete"
-    async with AsyncOpenAI(timeout=20, max_retries=0) as client:
+    async with AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"].strip(), timeout=20, max_retries=0) as client:
         for index in range(1, MAX_ACTIONS + 1):
             remaining = deadline - time.monotonic()
             if remaining <= 0:
