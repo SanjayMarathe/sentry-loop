@@ -1,0 +1,2 @@
+{"domain":"finance","type":"benign","risk_category":"payment_processing","task_id":"1"}
+{"domain":"finance","type":"malicious","threat_model":"indirect","risk_category":"payment_fraud","task_id":"1"}
